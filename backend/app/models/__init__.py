@@ -9,6 +9,7 @@ from app.models.api import (
     MessageResponse,
     RegisterRequest,
     StoryGenerateRequest,
+    StoryGenerateResponse,
     TokenPayload,
     UserResponse,
 )
@@ -24,6 +25,7 @@ __all__ = [
     "MessageResponse",
     "RegisterRequest",
     "StoryGenerateRequest",
+    "StoryGenerateResponse",
     "TokenPayload",
     "UserResponse",
 ]

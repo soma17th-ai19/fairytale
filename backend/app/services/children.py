@@ -93,6 +93,33 @@ async def get_child_by_id(child_id: str) -> Mapping[str, object] | None:
             return await cursor.fetchone()
 
 
+async def get_child_for_user(child_id: str, user_id: str) -> Mapping[str, object] | None:
+    """Return a child row owned by the given user, or None."""
+    async with get_db_connection() as connection:
+        async with connection.cursor() as cursor:
+            await cursor.execute(
+                """
+                select
+                    id::text as id,
+                    user_id::text as user_id,
+                    name,
+                    age,
+                    personality,
+                    favorite_character,
+                    favorite_toy,
+                    family_relationship,
+                    created_at,
+                    updated_at
+                from public.children
+                where id = %s::uuid
+                  and user_id = %s::uuid
+                limit 1
+                """,
+                (child_id, user_id),
+            )
+            return await cursor.fetchone()
+
+
 async def update_child(child_id: str, **fields: object) -> Mapping[str, object]:
     set_clauses = []
     params: list[object] = []
