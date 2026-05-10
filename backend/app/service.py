@@ -19,7 +19,7 @@ from app.exceptions import (
     StoryParsingError,
 )
 from app.graph.builder import graph
-from app.models.schemas import StoryRequest, Story
+from app.models.api import StoryRequest, Story
 
 
 def generate_story(req: StoryRequest) -> Story:
