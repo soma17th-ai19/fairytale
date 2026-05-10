@@ -1,6 +1,10 @@
 from app.models.api import (
     AuthResponse,
     ChildCreateRequest,
+    ChildResponse,
+    ChildUpdateRequest,
+    ExperienceCreateRequest,
+    ExperienceResponse,
     LoginRequest,
     MessageResponse,
     RegisterRequest,
@@ -12,6 +16,10 @@ from app.models.api import (
 __all__ = [
     "AuthResponse",
     "ChildCreateRequest",
+    "ChildResponse",
+    "ChildUpdateRequest",
+    "ExperienceCreateRequest",
+    "ExperienceResponse",
     "LoginRequest",
     "MessageResponse",
     "RegisterRequest",

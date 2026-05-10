@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from datetime import datetime
+from datetime import date, datetime
 
 from pydantic import BaseModel, Field
 from pydantic import ConfigDict, EmailStr
@@ -50,6 +50,47 @@ class ChildCreateRequest(BaseModel):
     age: int = Field(ge=0, le=18)
     personality: str
     favorite_character: str
+    favorite_toy: str = ""
+    family_relationship: str = ""
+
+
+class ChildResponse(BaseModel):
+    model_config = ConfigDict(from_attributes=True)
+
+    id: str
+    user_id: str
+    name: str
+    age: int
+    personality: str
+    favorite_character: str
+    favorite_toy: str
+    family_relationship: str
+    created_at: datetime
+    updated_at: datetime
+
+
+class ChildUpdateRequest(BaseModel):
+    name: str | None = None
+    age: int | None = Field(None, ge=0, le=18)
+    personality: str | None = None
+    favorite_character: str | None = None
+    favorite_toy: str | None = None
+    family_relationship: str | None = None
+
+
+class ExperienceCreateRequest(BaseModel):
+    content: str
+    experienced_at: date | None = None
+
+
+class ExperienceResponse(BaseModel):
+    model_config = ConfigDict(from_attributes=True)
+
+    id: str
+    child_id: str
+    content: str
+    experienced_at: date
+    created_at: datetime
 
 
 class StoryGenerateRequest(BaseModel):
