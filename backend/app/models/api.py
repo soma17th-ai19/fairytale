@@ -58,3 +58,15 @@ class StoryGenerateRequest(BaseModel):
     lesson: str
     mood: str
     category: str
+
+
+class StoryGenerateResponse(BaseModel):
+    model_config = ConfigDict(from_attributes=True)
+
+    id: str
+    title: str
+    body: str
+    lesson: str
+    image_url: str | None = None
+    audio_url: str | None = None
+    created_at: datetime
