@@ -2,15 +2,17 @@ import { FormEvent, useEffect, useState } from "react";
 import {
   AuthPayload,
   AuthResponse,
-  ChildCreatePayload,
-  StoryGeneratePayload,
   User,
-  createChild,
-  generateStory,
   getCurrentUser,
   login,
   register
 } from "./api/auth";
+import { Child, ChildCreatePayload, createChild } from "./api/children";
+import {
+  StoryGeneratePayload,
+  StoryGenerateResponse,
+  generateStory
+} from "./api/stories";
 
 const ACCESS_TOKEN_KEY = "fairytale.accessToken";
 
@@ -26,15 +28,11 @@ type ChildFormState = {
   age: string;
   personality: string;
   favorite_character: string;
+  favorite_toy: string;
+  family_relationship: string;
 };
 
-type StoryFormState = {
-  child_id: string;
-  situation: string;
-  lesson: string;
-  mood: string;
-  category: string;
-};
+type StoryFormState = StoryGeneratePayload;
 
 const initialAuthForm: AuthFormState = {
   email: "",
@@ -46,7 +44,9 @@ const initialChildForm: ChildFormState = {
   name: "",
   age: "",
   personality: "",
-  favorite_character: ""
+  favorite_character: "",
+  favorite_toy: "",
+  family_relationship: ""
 };
 
 const initialStoryForm: StoryFormState = {
@@ -64,6 +64,8 @@ function App() {
   const [childForm, setChildForm] = useState<ChildFormState>(initialChildForm);
   const [storyForm, setStoryForm] = useState<StoryFormState>(initialStoryForm);
   const [user, setUser] = useState<User | null>(null);
+  const [child, setChild] = useState<Child | null>(null);
+  const [story, setStory] = useState<StoryGenerateResponse | null>(null);
   const [accessToken, setAccessToken] = useState<string | null>(() =>
     localStorage.getItem(ACCESS_TOKEN_KEY)
   );
@@ -166,20 +168,22 @@ function App() {
       name: childForm.name.trim(),
       age,
       personality: childForm.personality.trim(),
-      favorite_character: childForm.favorite_character.trim()
+      favorite_character: childForm.favorite_character.trim(),
+      favorite_toy: childForm.favorite_toy.trim(),
+      family_relationship: childForm.family_relationship.trim()
     };
 
     setIsChildSubmitting(true);
 
     try {
-      await createChild(payload, accessToken);
+      const createdChild = await createChild(payload, accessToken);
+      setChild(createdChild);
+      setStoryForm((current) => ({ ...current, child_id: createdChild.id }));
       setChildForm(initialChildForm);
-      setChildMessage("자녀 정보가 저장되었습니다.");
+      setChildMessage(`${createdChild.name} 정보가 저장되었습니다. 동화 생성에 사용할 아이 ID가 자동 입력됩니다.`);
     } catch (caught: unknown) {
       setChildError(
-        caught instanceof Error
-          ? caught.message
-          : "자녀 정보 저장에 실패했습니다."
+        caught instanceof Error ? caught.message : "자녀 정보 저장에 실패했습니다."
       );
     } finally {
       setIsChildSubmitting(false);
@@ -190,6 +194,12 @@ function App() {
     event.preventDefault();
     setStoryError(null);
     setStoryMessage(null);
+    setStory(null);
+
+    if (!accessToken) {
+      setStoryError("로그인이 필요합니다.");
+      return;
+    }
 
     const payload: StoryGeneratePayload = {
       child_id: storyForm.child_id.trim(),
@@ -202,8 +212,9 @@ function App() {
     setIsStorySubmitting(true);
 
     try {
-      const response = await generateStory(payload);
-      setStoryMessage(response.message || "동화 생성 요청이 완료되었습니다.");
+      const generatedStory = await generateStory(payload, accessToken);
+      setStory(generatedStory);
+      setStoryMessage("동화가 생성되었습니다.");
     } catch (caught: unknown) {
       setStoryError(
         caught instanceof Error ? caught.message : "동화 생성에 실패했습니다."
@@ -217,6 +228,8 @@ function App() {
     localStorage.removeItem(ACCESS_TOKEN_KEY);
     setAccessToken(null);
     setUser(null);
+    setChild(null);
+    setStory(null);
     setPage("home");
     setAuthMessage("로그아웃되었습니다.");
     setAuthError(null);
@@ -239,9 +252,10 @@ function App() {
       <main className="auth-screen">
         <section className="auth-copy">
           <p className="eyebrow">Fairytale</p>
-          <h1>맞춤 동화를 위한 계정 만들기</h1>
+          <h1>아이를 위한 맞춤 동화 만들기</h1>
           <p className="summary">
-            아이의 성향과 상황에 맞춰 동화 생성을 준비하는 서비스입니다.
+            로그인 후 아이 정보를 저장하고, 백엔드 API에 맞춤 동화 생성을
+            요청할 수 있습니다.
           </p>
         </section>
 
@@ -402,8 +416,8 @@ function App() {
             <p className="eyebrow">Story Studio</p>
             <h1>오늘의 맞춤 동화를 준비하세요</h1>
             <p className="summary">
-              자녀 정보를 등록한 뒤 상황, 교훈, 분위기를 선택해 개인화된 동화
-              생성을 요청할 수 있습니다.
+              자녀 정보를 등록한 뒤 상황, 교훈, 분위기, 카테고리를 선택해
+              개인화된 동화 생성을 요청할 수 있습니다.
             </p>
             <div className="hero-actions">
               <button
@@ -411,7 +425,7 @@ function App() {
                 type="button"
                 onClick={() => setPage("story")}
               >
-                동화 생성하기
+                {story ? "생성한 동화 보기" : "동화 생성하기"}
               </button>
               <button
                 className="secondary-button"
@@ -426,18 +440,25 @@ function App() {
           <section className="dashboard-grid" aria-label="서비스 현황">
             <article className="info-card">
               <p className="card-label">Profile</p>
-              <h2>아이 정보</h2>
-              <p>마이페이지에서 아이의 나이, 성격, 좋아하는 캐릭터를 입력합니다.</p>
+              <h2>{child ? child.name : "선택된 아이 없음"}</h2>
+              <p>
+                {child
+                  ? `아이 ID ${child.id}를 사용합니다.`
+                  : "동화를 생성하기 전에 아이 정보를 먼저 등록하세요."}
+              </p>
             </article>
             <article className="info-card">
               <p className="card-label">Story</p>
-              <h2>동화 생성</h2>
-              <p>상황, 교훈, 분위기, 카테고리를 입력해 stories API에 요청합니다.</p>
+              <h2>{story ? story.title : "생성 준비 완료"}</h2>
+              <p>
+                동화 생성 API는 제목, 본문, 교훈, 이미지와 오디오 URL을
+                반환합니다.
+              </p>
             </article>
             <article className="info-card">
-              <p className="card-label">History</p>
-              <h2>기록</h2>
-              <p>생성한 동화 목록과 다시 만들기 기능은 이후 API와 연결합니다.</p>
+              <p className="card-label">Account</p>
+              <h2>{user.email}</h2>
+              <p>인증이 필요한 요청에는 백엔드가 요구하는 Bearer 토큰을 포함합니다.</p>
             </article>
           </section>
         </main>
@@ -449,7 +470,7 @@ function App() {
             <p className="eyebrow">Generate</p>
             <h1>동화 생성</h1>
             <p className="summary">
-              백엔드 `stories` API에 보낼 동화 조건을 입력합니다.
+              아이 ID와 동화 조건을 인증이 필요한 stories API로 전송합니다.
             </p>
           </section>
 
@@ -460,7 +481,7 @@ function App() {
                 <input
                   autoComplete="off"
                   name="childId"
-                  placeholder="예: child uuid"
+                  placeholder="아이 정보를 저장하면 자동으로 입력됩니다"
                   required
                   type="text"
                   value={storyForm.child_id}
@@ -524,7 +545,7 @@ function App() {
                     <option value="따뜻한">따뜻한</option>
                     <option value="신나는">신나는</option>
                     <option value="차분한">차분한</option>
-                    <option value="유쾌한">유쾌한</option>
+                    <option value="용감한">용감한</option>
                   </select>
                 </label>
 
@@ -557,45 +578,114 @@ function App() {
                 disabled={isStorySubmitting}
                 type="submit"
               >
-                {isStorySubmitting ? "생성 요청 중" : "동화 생성 요청"}
+                {isStorySubmitting ? "생성 중" : "동화 생성"}
               </button>
             </form>
 
             <aside className="preview-panel">
               <p className="card-label">Preview</p>
-              <h2>{storyForm.category} 동화</h2>
-              <dl className="preview-list">
-                <div>
-                  <dt>분위기</dt>
-                  <dd>{storyForm.mood}</dd>
-                </div>
-                <div>
-                  <dt>교훈</dt>
-                  <dd>{storyForm.lesson || "입력 전"}</dd>
-                </div>
-                <div>
-                  <dt>상황</dt>
-                  <dd>{storyForm.situation || "입력 전"}</dd>
-                </div>
-              </dl>
+              <h2>{story ? story.title : `${storyForm.category} 동화`}</h2>
+              {story ? (
+                <>
+                  <p className="preview-excerpt">{story.body}</p>
+                  <dl className="preview-list">
+                    <div>
+                      <dt>교훈</dt>
+                      <dd>{story.lesson}</dd>
+                    </div>
+                    <div>
+                      <dt>생성일</dt>
+                      <dd>{new Date(story.created_at).toLocaleString()}</dd>
+                    </div>
+                  </dl>
+                </>
+              ) : (
+                <dl className="preview-list">
+                  <div>
+                    <dt>분위기</dt>
+                    <dd>{storyForm.mood}</dd>
+                  </div>
+                  <div>
+                    <dt>교훈</dt>
+                    <dd>{storyForm.lesson || "입력 전"}</dd>
+                  </div>
+                  <div>
+                    <dt>상황</dt>
+                    <dd>{storyForm.situation || "입력 전"}</dd>
+                  </div>
+                </dl>
+              )}
             </aside>
           </section>
+
+          {story ? (
+            <section className="story-reader" aria-label="생성된 동화">
+              <div className="story-reader-heading">
+                <p className="eyebrow">Story</p>
+                <h2>{story.title}</h2>
+                <p>
+                  {child ? `${child.name}에게 들려줄 동화입니다.` : "생성된 동화입니다."}
+                </p>
+              </div>
+
+              {story.image_url ? (
+                <img
+                  alt={`${story.title} 삽화`}
+                  className="story-image"
+                  src={story.image_url}
+                />
+              ) : null}
+
+              <article className="story-body">
+                {story.body
+                  .split(/\n{2,}/)
+                  .map((paragraph) => paragraph.trim())
+                  .filter(Boolean)
+                  .map((paragraph, index) => (
+                    <p key={`${story.id}-${index}`}>{paragraph}</p>
+                  ))}
+              </article>
+
+              <div className="story-footer">
+                <div>
+                  <p className="card-label">교훈</p>
+                  <p>{story.lesson}</p>
+                </div>
+                <div>
+                  <p className="card-label">생성일</p>
+                  <p>{new Date(story.created_at).toLocaleString()}</p>
+                </div>
+              </div>
+
+              {story.audio_url ? (
+                <audio className="story-audio" controls src={story.audio_url}>
+                  오디오를 재생할 수 없습니다.
+                </audio>
+              ) : null}
+            </section>
+          ) : null}
         </main>
       ) : null}
 
       {page === "mypage" ? (
         <main className="service-main">
           <section className="page-heading">
-            <p className="eyebrow">My Page</p>
+            <p className="eyebrow">Profile</p>
             <h1>아이 정보 관리</h1>
-            <p className="summary">동화 생성에 사용할 기본 정보를 입력합니다.</p>
+            <p className="summary">
+              백엔드 children API가 요구하는 아이 정보를 저장합니다.
+            </p>
           </section>
 
           <section className="profile-layout">
             <aside className="profile-summary">
-              <p className="card-label">Account</p>
-              <h2>{user.email}</h2>
-              <p>로그인된 계정에 자녀 정보를 연결합니다.</p>
+              <p className="card-label">Current child</p>
+              <h2>{child ? child.name : "등록된 아이 없음"}</h2>
+              <p>
+                {child
+                  ? `아이 ID ${child.id}가 동화 생성에 사용됩니다.`
+                  : "저장 후 반환된 아이 ID가 자동으로 사용됩니다."}
+              </p>
             </aside>
 
             <form className="child-form form-panel" onSubmit={handleChildSubmit}>
@@ -670,6 +760,38 @@ function App() {
                 />
               </label>
 
+              <label>
+                좋아하는 장난감
+                <input
+                  autoComplete="off"
+                  name="favoriteToy"
+                  type="text"
+                  value={childForm.favorite_toy}
+                  onChange={(event) =>
+                    setChildForm((current) => ({
+                      ...current,
+                      favorite_toy: event.target.value
+                    }))
+                  }
+                />
+              </label>
+
+              <label>
+                가족 관계
+                <input
+                  autoComplete="off"
+                  name="familyRelationship"
+                  type="text"
+                  value={childForm.family_relationship}
+                  onChange={(event) =>
+                    setChildForm((current) => ({
+                      ...current,
+                      family_relationship: event.target.value
+                    }))
+                  }
+                />
+              </label>
+
               {childError ? <p className="error">{childError}</p> : null}
               {childMessage ? <p className="success">{childMessage}</p> : null}
 
@@ -678,7 +800,7 @@ function App() {
                 disabled={isChildSubmitting}
                 type="submit"
               >
-                {isChildSubmitting ? "저장 중" : "자녀 정보 저장"}
+                {isChildSubmitting ? "저장 중" : "아이 정보 저장"}
               </button>
             </form>
           </section>
