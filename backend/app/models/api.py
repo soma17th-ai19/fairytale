@@ -111,3 +111,27 @@ class StoryGenerateResponse(BaseModel):
     image_url: str | None = None
     audio_url: str | None = None
     created_at: datetime
+
+
+# ── 내부 서비스용 모델 ─────────────────────────────────────────────────���────
+
+
+class Person(BaseModel):
+    name: str
+    relation: str
+    kind: str = "기타"
+    closeness: int = Field(default=3, ge=1, le=5)
+    role_today: str = ""
+    traits: list[str] = Field(default_factory=list)
+    note: str = ""
+
+
+class StoryRequest(BaseModel):
+    diary_date: date
+    diary: str
+    people: list[Person] = Field(default_factory=list)
+
+
+class Story(BaseModel):
+    title: str
+    body: str

@@ -18,7 +18,7 @@ from datetime import date
 from dataclasses import dataclass
 
 from app.graph.builder import graph
-from app.models.schemas import StoryRequest, Person
+from app.models.api import StoryRequest, Person
 
 
 @dataclass
