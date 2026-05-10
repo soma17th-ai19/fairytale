@@ -17,6 +17,11 @@ env/
 .env.local
 *.pem
 
+# Frontend
+node_modules/
+dist/
+coverage/
+
 # IDE / OS
 .idea/
 .vscode/
