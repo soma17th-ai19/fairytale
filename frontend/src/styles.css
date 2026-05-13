@@ -178,6 +178,22 @@ textarea {
   line-height: 1.5;
 }
 
+.child-display {
+  display: flex;
+  align-items: center;
+  min-height: 46px;
+  padding: 0 14px;
+  border: 1px solid #cfc6b8;
+  border-radius: 6px;
+  background: #ffffff;
+  color: #20242c;
+  font-weight: 700;
+}
+
+.child-display.empty {
+  color: #8a7564;
+}
+
 input:focus,
 select:focus,
 textarea:focus {

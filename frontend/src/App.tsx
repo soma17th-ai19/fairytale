@@ -254,7 +254,7 @@ function App() {
           <p className="eyebrow">Fairytale</p>
           <h1>아이를 위한 맞춤 동화 만들기</h1>
           <p className="summary">
-            로그인 후 아이 정보를 저장하고, 백엔드 API에 맞춤 동화 생성을
+            로그인 후 아이 정보를 저장하고, 맞춤 동화 생성을
             요청할 수 있습니다.
           </p>
         </section>
@@ -440,25 +440,24 @@ function App() {
           <section className="dashboard-grid" aria-label="서비스 현황">
             <article className="info-card">
               <p className="card-label">Profile</p>
-              <h2>{child ? child.name : "선택된 아이 없음"}</h2>
+              <h2>{child ? child.name : "입력된 정보 없음"}</h2>
               <p>
                 {child
-                  ? `아이 ID ${child.id}를 사용합니다.`
-                  : "동화를 생성하기 전에 아이 정보를 먼저 등록하세요."}
+                  ? `${child.name} 을/를 위한 동화를 생성합니다.`
+                  : "동화를 생성하기 전에 아이 정보를 먼저 등록해주세요."}
               </p>
             </article>
             <article className="info-card">
               <p className="card-label">Story</p>
               <h2>{story ? story.title : "생성 준비 완료"}</h2>
               <p>
-                동화 생성 API는 제목, 본문, 교훈, 이미지와 오디오 URL을
-                반환합니다.
+                동화는 제목, 본문, 교훈을 제공합니다.
               </p>
             </article>
             <article className="info-card">
               <p className="card-label">Account</p>
               <h2>{user.email}</h2>
-              <p>인증이 필요한 요청에는 백엔드가 요구하는 Bearer 토큰을 포함합니다.</p>
+              <p>인증이 필요한 기능은 로그인 상태에서만 이용할 수 있습니다.</p>
             </article>
           </section>
         </main>
@@ -470,28 +469,17 @@ function App() {
             <p className="eyebrow">Generate</p>
             <h1>동화 생성</h1>
             <p className="summary">
-              아이 ID와 동화 조건을 인증이 필요한 stories API로 전송합니다.
+              아이 이름과 동화 조건을 확인하고 전송합니다.
             </p>
           </section>
 
           <section className="story-layout">
             <form className="story-form form-panel" onSubmit={handleStorySubmit}>
               <label>
-                아이 ID
-                <input
-                  autoComplete="off"
-                  name="childId"
-                  placeholder="아이 정보를 저장하면 자동으로 입력됩니다"
-                  required
-                  type="text"
-                  value={storyForm.child_id}
-                  onChange={(event) =>
-                    setStoryForm((current) => ({
-                      ...current,
-                      child_id: event.target.value
-                    }))
-                  }
-                />
+                아이 이름
+                <div className={child ? "child-display" : "child-display empty"}>
+                  {child ? child.name : "아이 정보가 없습니다"}
+                </div>
               </label>
 
               <label>
@@ -584,37 +572,21 @@ function App() {
 
             <aside className="preview-panel">
               <p className="card-label">Preview</p>
-              <h2>{story ? story.title : `${storyForm.category} 동화`}</h2>
-              {story ? (
-                <>
-                  <p className="preview-excerpt">{story.body}</p>
-                  <dl className="preview-list">
-                    <div>
-                      <dt>교훈</dt>
-                      <dd>{story.lesson}</dd>
-                    </div>
-                    <div>
-                      <dt>생성일</dt>
-                      <dd>{new Date(story.created_at).toLocaleString()}</dd>
-                    </div>
-                  </dl>
-                </>
-              ) : (
-                <dl className="preview-list">
-                  <div>
-                    <dt>분위기</dt>
-                    <dd>{storyForm.mood}</dd>
-                  </div>
-                  <div>
-                    <dt>교훈</dt>
-                    <dd>{storyForm.lesson || "입력 전"}</dd>
-                  </div>
-                  <div>
-                    <dt>상황</dt>
-                    <dd>{storyForm.situation || "입력 전"}</dd>
-                  </div>
-                </dl>
-              )}
+              <h2>{`${storyForm.category} 동화`}</h2>
+              <dl className="preview-list">
+                <div>
+                  <dt>분위기</dt>
+                  <dd>{storyForm.mood}</dd>
+                </div>
+                <div>
+                  <dt>교훈</dt>
+                  <dd>{storyForm.lesson || "입력 전"}</dd>
+                </div>
+                <div>
+                  <dt>상황</dt>
+                  <dd>{storyForm.situation || "입력 전"}</dd>
+                </div>
+              </dl>
             </aside>
           </section>
 
@@ -673,18 +645,18 @@ function App() {
             <p className="eyebrow">Profile</p>
             <h1>아이 정보 관리</h1>
             <p className="summary">
-              백엔드 children API가 요구하는 아이 정보를 저장합니다.
+              우리 아이 정보를 저장합니다.
             </p>
           </section>
 
           <section className="profile-layout">
             <aside className="profile-summary">
               <p className="card-label">Current child</p>
-              <h2>{child ? child.name : "등록된 아이 없음"}</h2>
+              <h2>{child ? child.name : "아이 정보 없음"}</h2>
               <p>
                 {child
-                  ? `아이 ID ${child.id}가 동화 생성에 사용됩니다.`
-                  : "저장 후 반환된 아이 ID가 자동으로 사용됩니다."}
+                  ? `아이 정보가 동화 생성에 사용됩니다.`
+                  : "저장 후 아이 정보가 자동으로 사용됩니다."}
               </p>
             </aside>
 
